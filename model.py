@@ -47,7 +47,6 @@ class Encoder(nn.Module):
         self.n_layers = n_layers
 
     def forward(self, src, src_lengths):
-        # src: [B, Tx]
         emb = self.dropout(self.embedding(src))  # [B, Tx, emb_dim]
 
         packed = nn.utils.rnn.pack_padded_sequence(
@@ -68,7 +67,6 @@ class Decoder(nn.Module):
 
         self.rnn = nn.LSTM(emb_dim + enc_hid_dim, dec_hid_dim, batch_first=True)
 
-        # ✅ CORRECCIÓN IMPORTANTE: combinar output y context por concatenación
         self.fc_out = nn.Linear(dec_hid_dim + enc_hid_dim, vocab_size)
 
         self.dropout = nn.Dropout(dropout)
@@ -103,7 +101,7 @@ class Seq2Seq(nn.Module):
         self.eos_idx = eos_idx
         self.device = device
 
-        # ✅ Proyección encoder → decoder (lo que me preguntaste)
+        # Proyección encoder → decoder (lo que me preguntaste)
         enc_out_dim = encoder.hid_dim * (2 if encoder.bidir else 1)
         dec_hid_dim = decoder.rnn.hidden_size
         self.fc_h = nn.Linear(enc_out_dim, dec_hid_dim)

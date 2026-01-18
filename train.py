@@ -4,15 +4,13 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from data import TranslationDataset, collate_fn
+from dataset import TranslationDataset, collate_fn
 from model import Encoder, Decoder, Seq2Seq
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Dataset (el generador ya crea pares "es ||| en" en data/es_en.txt)
 DATA_PATH = "data/es_en.txt"
 
-# Entrenamiento
 BATCH_SIZE = 64
 EPOCHS = 20
 LR = 5e-4
@@ -161,14 +159,13 @@ def train_direction(direction: str):
                 ckpt_name,
             )
 
-    print(f"✅ Terminado {direction}. Mejor loss: {best_loss:.4f}")
+    print(f"Terminado {direction}. Mejor loss: {best_loss:.4f}")
 
 
 def run_training():
-    # Entrenamiento bidireccional (dos modelos, uno por dirección)
     train_direction("es-en")
     train_direction("en-es")
-    print("\n✅ Entrenamiento bidireccional terminado (2 checkpoints).")
+    print("\nEntrenamiento bidireccional terminado (2 checkpoints).")
 
 
 
