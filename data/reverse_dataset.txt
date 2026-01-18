@@ -1,6 +1,0 @@
-i like cats ||| cats like i
-she reads books ||| books reads she
-we love nlp ||| nlp love we
-attention helps models ||| models helps attention
-pytorch is great ||| great is pytorch
-machine learning is fun ||| fun is learning machine
