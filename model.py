@@ -101,7 +101,7 @@ class Seq2Seq(nn.Module):
         self.eos_idx = eos_idx
         self.device = device
 
-        # Proyección encoder → decoder (lo que me preguntaste)
+        # Proyección encoder → decoder
         enc_out_dim = encoder.hid_dim * (2 if encoder.bidir else 1)
         dec_hid_dim = decoder.rnn.hidden_size
         self.fc_h = nn.Linear(enc_out_dim, dec_hid_dim)
@@ -115,7 +115,6 @@ class Seq2Seq(nn.Module):
         Aquí construimos un vector [B, enc_out_dim] y lo proyectamos a dec_hid_dim.
         """
         if self.encoder.bidir:
-            # Tomamos última capa: forward y backward
             # índices: -2 (forward), -1 (backward)
             h_enc = torch.cat([h[-2], h[-1]], dim=1)  # [B, hid_dim*2]
             c_enc = torch.cat([c[-2], c[-1]], dim=1)
@@ -125,7 +124,7 @@ class Seq2Seq(nn.Module):
 
         h_dec = torch.tanh(self.fc_h(h_enc)).unsqueeze(0)  # [1, B, dec_hid_dim]
         c_dec = torch.tanh(self.fc_c(c_enc)).unsqueeze(0)
-        return (h_dec, c_dec)
+        return h_dec, c_dec
 
     def forward(self, src, trg, src_lengths, mask=None, teacher_forcing_ratio=0.5):
         """
@@ -142,7 +141,7 @@ class Seq2Seq(nn.Module):
         outputs = torch.zeros(B, Ty, vocab_size, device=self.device)
         attn_weights = []
 
-        y = trg[:, 0]  # <sos>
+        y = trg[:, 0]
 
         for t in range(1, Ty):
             logits, hidden, alpha = self.decoder(y, hidden, enc_outputs, mask=mask)

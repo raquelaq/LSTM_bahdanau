@@ -1,4 +1,3 @@
-import math
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -9,14 +8,14 @@ from model import Encoder, Decoder, Seq2Seq
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-DATA_PATH = "data/es_en.txt"
+DATA_PATH = "data/es-en.txt"
 
 BATCH_SIZE = 64
 EPOCHS = 20
 LR = 5e-4
 CLIP = 1.0
 
-# Modelo
+
 EMB_DIM = 64
 ENC_HID_DIM = 128
 DEC_HID_DIM = 128
@@ -45,17 +44,17 @@ def build_model_and_data(direction: str):
         n_layers=1,
         dropout=0.1,
         bidir=True,
-        pad_idx=dataset.src_pad_idx,  # OJO: padding del vocab de origen
+        pad_idx=dataset.src_pad_idx,
     )
 
     decoder = Decoder(
         vocab_size=TRG_VOCAB_SIZE,
         emb_dim=EMB_DIM,
-        enc_hid_dim=ENC_HID_DIM * 2,  # bidir
+        enc_hid_dim=ENC_HID_DIM * 2,
         dec_hid_dim=DEC_HID_DIM,
         attn_dim=ATTN_DIM,
         dropout=0.1,
-        pad_idx=dataset.trg_pad_idx,  # OJO: padding del vocab de destino
+        pad_idx=dataset.trg_pad_idx,
     )
 
     model = Seq2Seq(
@@ -114,7 +113,7 @@ def train_epoch(model, loader, criterion, optimizer, teacher_forcing_ratio: floa
 def train_direction(direction: str):
     dataset, loader, model, criterion, optimizer, scheduler = build_model_and_data(direction)
 
-    print(f"\n=== Entrenando dirección: {direction} ===")
+    print(f"\nEntrenando dirección: {direction}")
     print("SRC vocab size:", len(dataset.src_vocab.itos))
     print("TRG vocab size:", len(dataset.trg_vocab.itos))
     print("Ejemplo SRC vocab:", dataset.src_vocab.itos[:15])
@@ -162,10 +161,8 @@ def train_direction(direction: str):
     print(f"Terminado {direction}. Mejor loss: {best_loss:.4f}")
 
 
-def run_training():
-    train_direction("es-en")
-    train_direction("en-es")
-    print("\nEntrenamiento bidireccional terminado (2 checkpoints).")
+
+
 
 
 

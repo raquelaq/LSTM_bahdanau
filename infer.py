@@ -1,5 +1,6 @@
-import argparse
+import numpy as np
 import torch
+import matplotlib.pyplot as plt
 
 from model import Encoder, Decoder, Seq2Seq
 from dataset import Vocab
@@ -55,67 +56,55 @@ def load_model(checkpoint_path: str):
 
 
 @torch.no_grad()
-def translate_sentence(model, src_vocab, trg_vocab, src_pad_idx, trg_sos_idx, trg_eos_idx, sentence: str, max_len=MAX_LEN):
+def translate_with_attention(model, src_vocab, trg_vocab, src_pad_idx, sos_idx, eos_idx, sentence: str, max_len: int = MAX_LEN):
     tokens = sentence.strip().split()
     if not tokens:
-        return []
+        return [], np.zeros((0, 0)), []
 
     unk = src_vocab.stoi["<unk>"]
     src_ids = [src_vocab.stoi.get(t, unk) for t in tokens]
 
-    src_tensor = torch.tensor(src_ids, dtype=torch.long).unsqueeze(0).to(DEVICE)  # [1, Tx]
+    src_tensor = torch.tensor(src_ids, dtype=torch.long).unsqueeze(0).to(DEVICE)
     src_len = torch.tensor([len(src_ids)], dtype=torch.long).to(DEVICE)
-    src_mask = (src_tensor != src_pad_idx).int()
+    src_mask = (src_tensor != src_pad_idx).int()  # [1, Tx]
 
     enc_outputs, (h, c) = model.encoder(src_tensor, src_len)
     hidden = model._init_decoder_hidden(h, c)
 
-    y = torch.tensor([trg_sos_idx], device=DEVICE, dtype=torch.long)
-    generated = []
+    y = torch.tensor([sos_idx], device=DEVICE, dtype=torch.long)
+    out_tokens = []
+    attn_rows = []
 
     for _ in range(max_len):
-        logits, hidden, _alpha = model.decoder(y, hidden, enc_outputs, mask=src_mask)
-        next_token = logits.argmax(dim=-1).item()
+        logits, hidden, alpha = model.decoder(y, hidden, enc_outputs, mask=src_mask)
+        next_id = int(logits.argmax(dim=-1).item())
 
-        if next_token == trg_eos_idx:
+        if next_id == eos_idx:
             break
 
-        generated.append(trg_vocab.itos[next_token])
-        y = torch.tensor([next_token], device=DEVICE, dtype=torch.long)
+        out_tokens.append(trg_vocab.itos[next_id])
+        attn_rows.append(alpha.squeeze(0).detach().cpu().numpy())  # [Tx]
+        y = torch.tensor([next_id], device=DEVICE, dtype=torch.long)
 
-    return generated
-
-
-def run_inference(direction: str):
-    ckpt_path = f"seq2seq_bahdanau_{direction}.pt"
-    model, src_vocab, trg_vocab, src_pad_idx, trg_sos_idx, trg_eos_idx = load_model(ckpt_path)
-
-    print(f"\n=== INFERENCIA {direction} ===")
-    print("Escribe una frase tokenizada por espacios. 'q' para salir.\n")
-
-    while True:
-        s = input("> ").strip()
-        if s.lower() == "q":
-            break
-
-        out = translate_sentence(
-            model=model,
-            src_vocab=src_vocab,
-            trg_vocab=trg_vocab,
-            src_pad_idx=src_pad_idx,
-            trg_sos_idx=trg_sos_idx,
-            trg_eos_idx=trg_eos_idx,
-            sentence=s,
-        )
-        print(" ".join(out))
+    attn = np.array(attn_rows) if len(attn_rows) > 0 else np.zeros((0, len(tokens)))
+    return out_tokens, attn, tokens
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--direction", choices=["es-en", "en-es"], required=True)
-    args = parser.parse_args()
-    run_inference(args.direction)
+def show_attention(attn, src_tokens, out_tokens, title):
+    fig, ax = plt.subplots(figsize=(8, 5))
+    im = ax.imshow(attn, aspect="auto")
+
+    ax.set_xticks(np.arange(len(src_tokens)))
+    ax.set_yticks(np.arange(len(out_tokens)))
+    ax.set_xticklabels(src_tokens, rotation=45, ha="right")
+    ax.set_yticklabels(out_tokens)
+
+    ax.set_xlabel("Tokens origen")
+    ax.set_ylabel("Tokens destino")
+    ax.set_title(title)
+    plt.colorbar(im)
+    plt.tight_layout()
+    plt.show()
 
 
-if __name__ == "__main__":
-    main()
+

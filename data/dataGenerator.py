@@ -1,4 +1,3 @@
-# generate_dataset.py
 import random
 from pathlib import Path
 
@@ -72,7 +71,7 @@ def sample_pair():
     en = en_t.format(**mapping).strip()
     return es, en
 
-def generate_data(n=2000, out_path="data/es_en.txt"):
+def generate_data(n=2000, out_path="data/es-en.txt"):
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
 

@@ -1,6 +1,6 @@
 from collections import Counter
 from dataclasses import dataclass
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 
 import torch
 from torch.utils.data import Dataset
@@ -15,7 +15,7 @@ class Vocab:
             counter.update(t.split())
 
         words = [(w, c) for w, c in counter.items() if c >= min_freq]
-        words.sort(key=lambda x: (-x[1], x[0]))  # determinista
+        words.sort(key=lambda x: (-x[1], x[0]))
 
         self.itos = SPECIALS + [w for w, _ in words]
         self.stoi = {w: i for i, w in enumerate(self.itos)}
@@ -71,7 +71,6 @@ class TranslationDataset(Dataset):
                 es_texts.append(es)
                 en_texts.append(en)
 
-        # Dos vocabularios (origen/destino) según direction
         if direction == "es-en":
             src_texts, trg_texts = es_texts, en_texts
         else:
